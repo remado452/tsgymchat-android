@@ -6,12 +6,21 @@ android {
     namespace 'ir.tsgym.chat'
     compileSdk 35
 
+    signingConfigs {
+        debug {
+            storeFile file('keys/tsgymchat-debug.keystore')
+            storePassword 'tsgymchatdebug'
+            keyAlias 'tsgymchatdebug'
+            keyPassword 'tsgymchatdebug'
+        }
+    }
+
     defaultConfig {
         applicationId 'ir.tsgym.chat'
         minSdk 24
         targetSdk 35
-        versionCode 5
-        versionName '3.1.0'
+        versionCode 7
+        versionName '3.3.0'
     }
 
     buildTypes {
@@ -23,6 +32,7 @@ android {
         debug {
             applicationIdSuffix '.debug'
             versionNameSuffix '-debug'
+            signingConfig signingConfigs.debug
         }
     }
 
