@@ -5,7 +5,9 @@ plugins {
 android {
     namespace 'ir.tsgym.chat'
     compileSdk 35
-
+    buildFeatures {
+        buildConfig = true
+    }
     signingConfigs {
         debug {
             storeFile file('keys/tsgymchat-debug.keystore')
@@ -14,6 +16,8 @@ android {
             keyPassword 'tsgymchatdebug'
         }
     }
+
+
 
     defaultConfig {
         applicationId 'ir.tsgym.chat'
