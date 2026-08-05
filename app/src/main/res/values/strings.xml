@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">tsgymChat</string>
+    <string name="connection_error_title">اتصال برقرار نشد</string>
+    <string name="connection_error_message">اینترنت یا ارتباط امن با سرور TSGYM را بررسی کنید.</string>
+    <string name="retry">تلاش دوباره</string>
+</resources>
