@@ -38,11 +38,9 @@ import android.widget.Toast;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Locale;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -391,44 +389,15 @@ public final class MainActivity extends Activity {
         public void onPageFinished(WebView view, String url) {
             lastUrl = url;
             CookieManager.getInstance().flush();
-            if (mainFrameFailed) return;
+
+            if (mainFrameFailed) {
+                return;
+            }
+
             progressBar.setVisibility(View.GONE);
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-
-
-view.postVisualStateCallback(
-        System.currentTimeMillis(),
-        new WebView.VisualStateCallback() {
-            @Override
-            public void onComplete(long requestId) {
-                showWebContent();
-            }
-        }
-);
-
-                
-            } else {
-                view.setVisibility(View.VISIBLE);
-                view.invalidate();
-            }
-
-            final String finishedUrl = url;
-            mainHandler.postDelayed(() -> {
-                if (mainFrameFailed || !finishedUrl.equals(lastUrl)) return;
-                view.evaluateJavascript(
-                    "(function(){var b=document.body;return JSON.stringify({ready:document.readyState,html:b?(b.innerHTML||'').length:0,text:b?(b.innerText||'').length:0,title:document.title||''});})()",
-                    value -> {
-                        if (mainFrameFailed || !finishedUrl.equals(lastUrl)) return;
-                        if (value == null || value.contains("\\\"html\\\":0")) {
-                            showError(
-                                "پاسخ HTML خالی دریافت شد",
-                                "WebView درخواست را تمام کرد اما body صفحه خالی بود. این معمولاً از فایروال، محدودیت User-Agent یا پاسخ متفاوت سرور به WebView است.\nJS=" + safeMessage(value)
-                            );
-                        }
-                    }
-                );
-            }, 1800);
+            view.setVisibility(View.VISIBLE);
+            view.setAlpha(1.0f);
+            view.invalidate();
         }
 
         @Override
