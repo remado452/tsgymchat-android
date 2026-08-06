@@ -34,13 +34,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 public final class MainActivity extends Activity {
-    private static final String START_URL = "https://tsgym.ir/panel/tsgymchat_app/?app_android=1&app_version=3.3.0";
+    private static final String START_URL = "https://tsgym.ir/panel/tsgymchat_app/app_login";
     private static final String ALLOWED_HOST = "tsgym.ir";
-    private static final String APP_WEB_VERSION = "3.3.0";
+    private static final String APP_WEB_VERSION = "3.3.1";
     private static final int FILE_CHOOSER_REQUEST = 2001;
     private static final int AUDIO_PERMISSION_REQUEST = 2002;
     private static final long PAGE_TIMEOUT_MS = 30000L;
@@ -52,7 +50,6 @@ public final class MainActivity extends Activity {
     private TextView errorMessage;
     private ValueCallback<Uri[]> fileChooserCallback;
     private PermissionRequest pendingAudioRequest;
-    private boolean blankReloadAttempted = false;
     private boolean renderProcessGone = false;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable pageTimeout = () -> showError(
@@ -75,7 +72,6 @@ public final class MainActivity extends Activity {
                 recreate();
                 return;
             }
-            blankReloadAttempted = false;
             webView.clearCache(true);
             loadStartPage();
         });
@@ -97,14 +93,14 @@ public final class MainActivity extends Activity {
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(false);
+        settings.setDatabaseEnabled(true);
         settings.setAllowFileAccess(false);
         settings.setAllowContentAccess(true);
         settings.setSupportMultipleWindows(false);
         settings.setJavaScriptCanOpenWindowsAutomatically(false);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
-        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setDefaultTextEncodingName("UTF-8");
         settings.setLoadsImagesAutomatically(true);
         settings.setBlockNetworkImage(false);
@@ -114,7 +110,7 @@ public final class MainActivity extends Activity {
         settings.setDisplayZoomControls(false);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) settings.setOffscreenPreRaster(true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) settings.setSafeBrowsingEnabled(true);
-        settings.setUserAgentString(settings.getUserAgentString() + " tsgymChatAndroid/3.3");
+        settings.setUserAgentString(settings.getUserAgentString() + " tsgymChatAndroid/3.3.1");
 
         // Hardware rendering is intentionally left enabled. Forcing a software
         // WebView layer caused blank pages on some Samsung devices.
@@ -122,7 +118,7 @@ public final class MainActivity extends Activity {
 
         CookieManager cookies = CookieManager.getInstance();
         cookies.setAcceptCookie(true);
-        cookies.setAcceptThirdPartyCookies(webView, false);
+        cookies.setAcceptThirdPartyCookies(webView, true);
 
         webView.setBackgroundColor(getColorCompat(R.color.app_background));
         webView.setWebViewClient(new SecureWebViewClient());
@@ -140,12 +136,6 @@ public final class MainActivity extends Activity {
         }
     }
 
-    private Map<String, String> requestHeaders() {
-        Map<String, String> headers = new HashMap<>();
-        headers.put("X-TSGYM-App", "android");
-        headers.put("Cache-Control", "no-cache");
-        return headers;
-    }
 
     private int getColorCompat(int colorRes) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) return getColor(colorRes);
@@ -155,7 +145,7 @@ public final class MainActivity extends Activity {
     private void loadStartPage() {
         renderProcessGone = false;
         showLoading("در حال اتصال امن به TSGYM…");
-        webView.loadUrl(START_URL, requestHeaders());
+        webView.loadUrl(START_URL);
     }
 
     private boolean isAllowed(Uri uri) {
@@ -216,6 +206,24 @@ public final class MainActivity extends Activity {
         hideLoading();
         errorPanel.setVisibility(View.GONE);
         webView.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (webView != null) {
+            webView.onResume();
+            webView.resumeTimers();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (webView != null) {
+            webView.onPause();
+            webView.pauseTimers();
+        }
+        super.onPause();
     }
 
     @Override
@@ -304,31 +312,22 @@ public final class MainActivity extends Activity {
 
         @Override
         public void onPageCommitVisible(WebView view, String url) {
-            loadingMessage.setText("در حال آماده‌سازی صفحه…");
+            // WebView has committed visible content for the main frame.
+            // Show it directly instead of guessing that redirect pages are blank.
+            if (url != null && !"about:blank".equalsIgnoreCase(url)) {
+                showWebContent();
+            }
         }
 
         @Override
         public void onPageFinished(WebView view, String url) {
             CookieManager.getInstance().flush();
-            view.evaluateJavascript(
-                "(function(){try{var b=document.body;var h=document.documentElement;return JSON.stringify({ready:document.readyState,text:b?(b.innerText||'').length:0,html:b?(b.innerHTML||'').length:0,w:h?h.scrollWidth:0,h:h?h.scrollHeight:0,title:document.title||''});}catch(e){return JSON.stringify({error:String(e)});}})()",
-                value -> {
-                    boolean empty = value == null ||
-                        (value.contains("\\\"text\\\":0") && value.contains("\\\"html\\\":0"));
-                    if (empty) {
-                        if (!blankReloadAttempted) {
-                            blankReloadAttempted = true;
-                            webView.clearCache(true);
-                            webView.loadUrl(url, requestHeaders());
-                        } else {
-                            showError("صفحه از سرور دریافت شد اما محتوایی نمایش داده نشد. Android System WebView و Google Chrome را به‌روزرسانی کنید.");
-                        }
-                    } else {
-                        blankReloadAttempted = false;
-                        showWebContent();
-                    }
-                }
-            );
+
+            // This callback may run multiple times during language/session redirects.
+            // Network, HTTP and SSL failures are handled in their dedicated callbacks.
+            if (url != null && !"about:blank".equalsIgnoreCase(url)) {
+                showWebContent();
+            }
         }
 
         @Override

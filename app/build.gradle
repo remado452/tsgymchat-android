@@ -5,9 +5,11 @@ plugins {
 android {
     namespace 'ir.tsgym.chat'
     compileSdk 35
+
     buildFeatures {
         buildConfig = true
     }
+
     signingConfigs {
         debug {
             storeFile file('keys/tsgymchat-debug.keystore')
@@ -17,15 +19,12 @@ android {
         }
     }
 
-    
-
-
     defaultConfig {
         applicationId 'ir.tsgym.chat'
         minSdk 24
         targetSdk 35
-        versionCode 7
-        versionName '3.3.0'
+        versionCode 8
+        versionName '3.3.1'
     }
 
     buildTypes {
