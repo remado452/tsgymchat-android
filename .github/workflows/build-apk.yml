@@ -1,23 +1,31 @@
-name: Build tsgymChat APK
+name: Build official TsGym-Chat APK
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-      - master
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Read app version
+        shell: bash
+        run: |
+          VERSION_CODE="$(awk '/^[[:space:]]*versionCode[[:space:]]+[0-9]+/{print $2; exit}' app/build.gradle)"
+          VERSION_NAME="$(awk '/^[[:space:]]*versionName[[:space:]]+/{gsub(/[\047\042]/, "", $2); print $2; exit}' app/build.gradle)"
+          test -n "$VERSION_CODE" && test -n "$VERSION_NAME" || { echo "Could not read app version"; exit 1; }
+          echo "VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -36,12 +44,50 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APK
-        run: gradle --no-daemon clean assembleDebug --stacktrace
+      - name: Decode private release keystore
+        shell: bash
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.TSGYMCHAT_RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$RELEASE_KEYSTORE_BASE64" || { echo "Missing TSGYMCHAT_RELEASE_KEYSTORE_BASE64"; exit 1; }
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/TsgymChat-release.jks"
 
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+      - name: Build signed release APK
+        shell: bash
+        env:
+          TSGYMCHAT_KEYSTORE_PATH: ${{ runner.temp }}/TsgymChat-release.jks
+          TSGYMCHAT_KEYSTORE_PASSWORD: ${{ secrets.TSGYMCHAT_RELEASE_STORE_PASSWORD }}
+          TSGYMCHAT_KEY_ALIAS: ${{ secrets.TSGYMCHAT_RELEASE_KEY_ALIAS }}
+          TSGYMCHAT_KEY_PASSWORD: ${{ secrets.TSGYMCHAT_RELEASE_KEY_PASSWORD }}
+        run: gradle --no-daemon clean assembleRelease --stacktrace
+
+      - name: Prepare update bundle
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/release/app-release.apk dist/TsgymChat.apk
+          SHA256="$(sha256sum dist/TsgymChat.apk | awk '{print $1}')"
+          SIZE="$(stat -c%s dist/TsgymChat.apk)"
+          cat > dist/latest.json <<JSON
+          {
+            "enabled": true,
+            "versionCode": ${VERSION_CODE},
+            "versionName": "${VERSION_NAME}",
+            "minSupportedVersionCode": ${VERSION_CODE},
+            "minSupportedVersionName": "${VERSION_NAME}",
+            "mandatory": true,
+            "apkUrl": "https://tsgym.ir/panel/tsgymchat_app/updates/TsgymChat.apk",
+            "sha256": "${SHA256}",
+            "size": ${SIZE},
+            "notes": "نسخه جدید TsGym-Chat شامل بهبودهای امنیتی، پایداری و رابط کاربری است."
+          }
+          JSON
+          printf '%s  %s\n' "$SHA256" "TsgymChat.apk" > dist/SHA256.txt
+
+      - name: Upload official release bundle
+        uses: actions/upload-artifact@v5
         with:
-          name: tsgymChat-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: TsGym-Chat-release
+          path: dist/
           if-no-files-found: error
+          retention-days: 30
