@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="app_primary">#2563EB</color>
-    <color name="app_background">#F2F6FC</color>
+    <color name="app_primary">#123B73</color>
+    <color name="app_primary_dark">#071A3A</color>
+    <color name="app_background">#F6F8FC</color>
     <color name="app_text">#10213A</color>
     <color name="app_muted">#64748B</color>
-    <color name="splash_background">#07111F</color>
+    <color name="white">#FFFFFF</color>
+    <color name="splash_background">#FFFFFF</color>
 </resources>

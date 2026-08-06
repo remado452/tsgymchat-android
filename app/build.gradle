@@ -11,11 +11,21 @@ android {
     }
 
     signingConfigs {
-        debug {
-            storeFile file('keys/tsgymchat-debug.keystore')
-            storePassword 'tsgymchatdebug'
-            keyAlias 'tsgymchatdebug'
-            keyPassword 'tsgymchatdebug'
+        release {
+            def keyPath = System.getenv('TSGYMCHAT_KEYSTORE_PATH')
+            def storePass = System.getenv('TSGYMCHAT_KEYSTORE_PASSWORD')
+            def aliasName = System.getenv('TSGYMCHAT_KEY_ALIAS')
+            def keyPass = System.getenv('TSGYMCHAT_KEY_PASSWORD')
+            def releaseRequested = gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }
+            if (releaseRequested && !(keyPath && storePass && aliasName && keyPass)) {
+                throw new GradleException('Release signing secrets are missing. See RELEASE-GUIDE-FA.md.')
+            }
+            if (keyPath && storePass && aliasName && keyPass) {
+                storeFile file(keyPath)
+                storePassword storePass
+                keyAlias aliasName
+                keyPassword keyPass
+            }
         }
     }
 
@@ -23,20 +33,20 @@ android {
         applicationId 'ir.tsgym.chat'
         minSdk 24
         targetSdk 35
-        versionCode 11
-        versionName '4.1.1'
+        versionCode 50000
+        versionName '5.0.0'
     }
 
     buildTypes {
         release {
             minifyEnabled true
             shrinkResources true
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
             applicationIdSuffix '.debug'
             versionNameSuffix '-debug'
-            signingConfig signingConfigs.debug
         }
     }
 
@@ -44,4 +54,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.15.0'
 }
