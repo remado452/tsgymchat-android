@@ -1,6 +1,9 @@
 name: Build official TsGym-Chat APK
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
