@@ -395,12 +395,19 @@ public final class MainActivity extends Activity {
             progressBar.setVisibility(View.GONE);
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                view.postVisualStateCallback(System.currentTimeMillis(), requestId -> {
-                    if (!mainFrameFailed) {
-                        view.setVisibility(View.VISIBLE);
-                        view.invalidate();
-                    }
-                });
+
+
+view.postVisualStateCallback(
+        System.currentTimeMillis(),
+        new WebView.VisualStateCallback() {
+            @Override
+            public void onComplete(long requestId) {
+                showWebContent();
+            }
+        }
+);
+
+                
             } else {
                 view.setVisibility(View.VISIBLE);
                 view.invalidate();
