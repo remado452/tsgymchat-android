@@ -1,0 +1,9 @@
+راهنمای سریع:
+1) کل محتوای این بسته را در ریشه Repository آپلود کنید.
+2) مطمئن شوید فایل زیر وجود دارد:
+   .github/workflows/official-tsgymchat-release.yml
+3) فایل قدیمی زیر نباید وجود داشته باشد:
+   .github/workflows/build-apk.yml
+4) Commit را مستقیم روی main انجام دهید.
+5) همان Commit باید خودکار در Actions ثبت شود.
+6) نام Workflow: Build official TsGym-Chat APK
