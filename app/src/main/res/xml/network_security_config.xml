@@ -5,12 +5,15 @@
             <certificates src="system" />
         </trust-anchors>
     </base-config>
+
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">tsgym.ir</domain>
         <trust-anchors>
             <certificates src="system" />
+            <certificates src="@raw/certum_android_ca" />
         </trust-anchors>
     </domain-config>
+
     <debug-overrides>
         <trust-anchors>
             <certificates src="user" />

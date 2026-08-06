@@ -45,7 +45,7 @@ import java.util.Arrays;
 import javax.net.ssl.HttpsURLConnection;
 
 public final class MainActivity extends Activity {
-    private static final String APP_VERSION = "4.1.0";
+    private static final String APP_VERSION = "4.1.1";
     private static final String START_URL = "https://tsgym.ir/panel/tsgymchat_app/app_login?app_android=1&app_version=" + APP_VERSION;
     private static final String PROBE_URL = "https://tsgym.ir/panel/tsgymchat_app/webview_probe?app_version=" + APP_VERSION;
     private static final String ALLOWED_HOST = "tsgym.ir";
