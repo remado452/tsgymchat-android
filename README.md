@@ -9,7 +9,7 @@ TSGYM provides tools and services for TeamSpeak users and server communities.
 ## Official Website
 
 https://tsgym.ir/teamspeak-server-list
-
+https://tsgym.ir/en/teamspeak-server-list
 ## Features
 
 - Android application
